@@ -1,0 +1,201 @@
+#:import MDLabel kivymd.uix.label.MDLabel
+#:import MDRaisedButton kivymd.uix.button.MDRaisedButton
+#:import MDFloatLayout kivymd.uix.floatlayout.MDFloatLayout
+#:import MDBoxLayout kivymd.uix.boxlayout.MDBoxLayout
+#:import MDTextField kivymd.uix.textfield.MDTextField
+#:import MDSnackbar kivymd.uix.snackbar.MDSnackbar
+
+<StartScreen>:
+    MDBoxLayout:
+        orientation: "vertical"
+
+        FloatLayout:
+            MDLabel:
+                text: "Добро пожаловать"
+                halign: "center"
+                theme_text_color: "Custom"
+                text_color: 1,1,1,1
+                font_name: "Assets/fonts/Jura-Bold.ttf"
+                pos_hint: {"center_x":0.5, "center_y":0.7}
+                font_size: "30sp"
+
+            MDTextField:
+                id: speed_input
+                hint_text: "Минимальная скорость робота, км/ч"
+                input_filter: "float"
+                font_name: "Assets/fonts/Jura-Regular.ttf"
+                size_hint_x: 0.7
+                pos_hint: {"center_x":0.5, "center_y":0.45}
+
+            MDRaisedButton:
+                text: "Старт"
+                pos_hint: {"center_x":0.5, "center_y":0.25}
+                font_name: "Assets/fonts/Jura-Medium.ttf"
+                md_bg_color: 0.37, 0.37, 0.37, 0.4
+                font_size: "26sp"
+                text_color: 1,1,1,1
+                on_release: root.start()
+
+<CameraScreen>:
+    MDBoxLayout:
+        orientation: "vertical"
+
+        FloatLayout:
+            MDRaisedButton:
+                text: "Открыть камеру"
+                pos_hint: {"center_x":0.5, "center_y":0.65}
+                text_color: 1,1,1,1
+                font_name: "Assets/fonts/Jura-Medium.ttf"
+                md_bg_color: 0.37, 0.37, 0.37, 0.4
+                on_release: app.open_camera()
+                font_size: "26sp"
+
+            MDRaisedButton:
+                text: "Выбрать из галереи"
+                pos_hint: {"center_x":0.5, "center_y":0.5}
+                text_color: 1,1,1,1
+                font_name: "Assets/fonts/Jura-Medium.ttf"
+                md_bg_color: 0.37, 0.37, 0.37, 0.4
+                on_release: app.pick_from_gallery()
+                font_size: "26sp"
+
+            MDRaisedButton:
+                text: "-->"
+                pos_hint: {"center_x":0.65, "center_y":0.25}
+                text_color: 1,1,1,1
+                font_name: "Assets/fonts/Jura-Regular.ttf"
+                md_bg_color: 0.37, 0.37, 0.37, 0.4
+                on_release: app.go_next("line")
+                font_size: "24sp"
+
+            MDRaisedButton:
+                text: "<--"
+                pos_hint: {"center_x":0.35, "center_y":0.25}
+                text_color: 1,1,1,1
+                font_name: "Assets/fonts/Jura-Regular.ttf"
+                md_bg_color: 0.37, 0.37, 0.37, 0.4
+                on_release: app.go_back("start")
+                font_size: "24sp"
+
+<LineSelectScreen>:
+    MDBoxLayout:
+        orientation: "vertical"
+        padding: "12dp"
+        spacing: "12dp"
+
+        # MDLabel:
+        #     text: "Экран линии"
+        #     halign: "center"
+        #     theme_text_color: "Custom"
+        #     text_color: 1,1,1,1
+        #     font_name: "Assets/fonts/Jura-Bold.ttf"
+        #     font_size: "28sp"
+        #     size_hint_y: None
+        #     height: self.texture_size[1] + dp(10)
+
+        MDBoxLayout:
+            size_hint_y: 0.55
+            md_bg_color: 0.15, 0.15, 0.15, 1
+            radius: [16,]
+            padding: "8dp"
+
+            Image:
+                source: root.image_path
+                allow_stretch: True
+                keep_ratio: True
+
+        FloatLayout:
+            size_hint_y: 0.3
+
+            MDRaisedButton:
+                text: "<--"
+                pos_hint: {"center_x":0.2, "center_y":0.5}
+                text_color: 1,1,1,1
+                font_name: "Assets/fonts/Jura-Regular.ttf"
+                md_bg_color: 0.37, 0.37, 0.37, 0.4
+                on_release: app.go_back("camera")
+                font_size: "24sp"
+
+            MDRaisedButton:
+                text: "-->"
+                pos_hint: {"center_x":0.8, "center_y":0.5}
+                text_color: 1,1,1,1
+                font_name: "Assets/fonts/Jura-Regular.ttf"
+                md_bg_color: 0.37, 0.37, 0.37, 0.4
+                on_release: app.go_next("profile")
+                font_size: "24sp"
+
+
+
+<ProfileScreen>:
+    MDBoxLayout:
+        orientation: "vertical"
+
+        FloatLayout:
+            MDLabel:
+                text: "Экран профиля"
+                halign: "center"
+                theme_text_color: "Custom"
+                text_color: 1,1,1,1
+                font_name: "Assets/fonts/Jura-Bold.ttf"
+                pos_hint: {"center_x":0.5, "center_y":0.6}
+                font_size: "28sp"
+
+            MDRaisedButton:
+                text: "<--"
+                pos_hint: {"center_x":0.2, "center_y":0.4}
+                text_color: 1,1,1,1
+                font_name: "Assets/fonts/Jura-Regular.ttf"
+                md_bg_color: 0.37, 0.37, 0.37, 0.4
+                on_release: app.go_back("line")
+                font_size: "24sp"
+
+            MDRaisedButton:
+                text: "-->"
+                pos_hint: {"center_x":0.8, "center_y":0.4}
+                text_color: 1,1,1,1
+                font_name: "Assets/fonts/Jura-Regular.ttf"
+                md_bg_color: 0.37, 0.37, 0.37, 0.4
+                on_release: app.go_next("result")
+                font_size: "24sp"
+
+
+<ResultScreen>:
+    MDBoxLayout:
+        orientation: "vertical"
+
+        FloatLayout:
+            MDLabel:
+                text: "Экран результата"
+                halign: "center"
+                theme_text_color: "Custom"
+                text_color: 1,1,1,1
+                font_name: "Assets/fonts/Jura-Bold.ttf"
+                pos_hint: {"center_x":0.5, "center_y":0.6}
+                font_size: "28sp"
+
+            MDRaisedButton:
+                text: "<--"
+                pos_hint: {"center_x":0.5, "center_y":0.4}
+                text_color: 1,1,1,1
+                font_name: "Assets/fonts/Jura-Regular.ttf"
+                md_bg_color: 0.37, 0.37, 0.37, 0.4
+                on_release: app.go_back("profile")
+                font_size: "24sp"
+
+
+
+<StyledSnackbar@MDSnackbar>:
+    size_hint_x: 0.85
+    pos_hint: {"center_x": 0.5, "center_y": 0.08}
+    md_bg_color: 0.25, 0.25, 0.25, 0.9
+    radius: [20, 20, 20, 20]
+
+    SnackbarLabel:
+        id: label
+
+
+<SnackbarLabel@MDLabel>:
+    theme_text_color: "Custom"
+    text_color: 1, 1, 1, 1
+    font_name: "Assets/fonts/Jura-Medium.ttf"
