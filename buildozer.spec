@@ -38,7 +38,7 @@ version = 0.1
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3==3.10.11,kivy==2.2.1,kivymd==1.1.1,plyer==2.1.0,android
+requirements = python3,kivy,kivymd,plyer,pyjnius
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
@@ -56,13 +56,6 @@ orientation = portrait
 
 # (list) List of service to declare
 #services = NAME:ENTRYPOINT_TO_PY,NAME2:ENTRYPOINT2_TO_PY
-
-#
-# OSX Specific
-#
-
-#
-# author = © Copyright Info
 
 android.allow_backup = True
 
@@ -89,13 +82,13 @@ android.allow_backup = True
 #
 
 # (str) python-for-android URL to use for checkout
-p4a.url = https://github.com/kivy/python-for-android.git
+#p4a.url = https://github.com/kivy/python-for-android.git
 
 # (str) python-for-android fork to use in case if p4a.url is not specified, defaults to upstream (kivy)
 #p4a.fork = kivy
 
 # (str) python-for-android branch to use, defaults to master
-4a.branch = develop
+#p4a.branch = develop
 
 # (str) python-for-android specific commit to use, defaults to HEAD, must be within p4a.branch
 #p4a.commit = HEAD
@@ -121,3 +114,10 @@ p4a.url = https://github.com/kivy/python-for-android.git
 # NOTE: this is general setuptools integration, having pyproject.toml is enough, no need to generate
 # setup.py if you're using Poetry, but you need to add "toml" to source.include_exts.
 #p4a.setup_py = false
+
+android.arch = arm64-v8a
+
+android.api = 33
+android.ndk_api = 23
+
+android.permissions = CAMERA,READ_EXTERNAL_STORAGE,WRITE_EXTERNAL_STORAGE
