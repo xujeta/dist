@@ -38,7 +38,7 @@ version = 0.1
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3,kivy,kivymd,plyer,pyjnius
+requirements = python3,kivy,kivymd,plyer,pyjnius,android
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
@@ -115,9 +115,9 @@ android.allow_backup = True
 # setup.py if you're using Poetry, but you need to add "toml" to source.include_exts.
 #p4a.setup_py = false
 
-android.arch = arm64-v8a
+android.archs = arm64-v8a
 
-android.api = 33
-android.ndk_api = 23
+#android.api = 33
+#android.ndk_api = 23
 
 android.permissions = CAMERA,READ_EXTERNAL_STORAGE,WRITE_EXTERNAL_STORAGE
