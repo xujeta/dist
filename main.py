@@ -80,22 +80,38 @@ class MainApp(MDApp):
 
     def open_camera_android(self):
         try:
+            from android.permissions import request_permissions, Permission
+            # Запрашиваем разрешение на камеру
+            request_permissions([Permission.CAMERA], self._on_camera_permission)
+        except ImportError:
+            # Если модуль android не найден (например, при тестировании не на устройстве)
+            self._actually_open_camera_android()
+    
+    def _on_camera_permission(self, permissions, results):
+        if results and results[0]:
+            # Разрешение получено
+            self._actually_open_camera_android()
+        else:
+            self.show_snackbar("Необходимо разрешение на камеру")
+    
+    def _actually_open_camera_android(self):
+        try:
             from jnius import autoclass
-
+    
             PythonActivity = autoclass('org.kivy.android.PythonActivity')
             Intent = autoclass('android.content.Intent')
             MediaStore = autoclass('android.provider.MediaStore')
-
+    
             activity = PythonActivity.mActivity
             intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-
+    
             activity.startActivity(intent)
-
+    
             self.show_snackbar("Сделай фото, затем выбери его из галереи")
-
+    
         except Exception as e:
             self.show_snackbar(f"Ошибка запуска камеры: {e}")
-
+    
     def open_camera_ios(self):
         try:
             from plyer import camera
