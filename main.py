@@ -3,8 +3,6 @@ from kivy.lang import Builder
 from kivy.uix.screenmanager import ScreenManager, SlideTransition
 from kivy.properties import StringProperty, NumericProperty
 from kivy.logger import Logger
-from kivymd.uix.snackbar import MDSnackbar
-from kivymd.uix.label import MDLabel
 from kivy.factory import Factory
 from screens.start_screen import StartScreen
 import os, time
@@ -36,7 +34,6 @@ class MainApp(MDApp):
 
         return self.sm
     
-
     def go_next(self, screen_name):
         self.sm.transition.direction = "left"
         self.sm.current = screen_name
@@ -61,35 +58,18 @@ class MainApp(MDApp):
         snackbar.ids.label.text = text
         snackbar.open()
 
-    def get_platform(self):
-        try:
-            from kivy.utils import platform
-            return platform
-        except:
-            return 'unknown'
+    # --- Android-only functions ---
 
     def open_camera(self):
-        platform = self.get_platform()
-
-        if platform == "android":
-            self.open_camera_android()
-        elif platform == "ios":
-            self.open_camera_ios()
-        else:
-            self.open_camera_desktop()
-
-    def open_camera_android(self):
+        """Запуск камеры на Android с запросом разрешений"""
         try:
             from android.permissions import request_permissions, Permission
-            # Запрашиваем разрешение на камеру
             request_permissions([Permission.CAMERA], self._on_camera_permission)
         except ImportError:
-            # Если модуль android не найден (например, при тестировании не на устройстве)
-            self._actually_open_camera_android()
-    
+            self.show_snackbar("Не удалось запросить разрешение на камеру")
+
     def _on_camera_permission(self, permissions, results):
         if results and results[0]:
-            # Разрешение получено
             self._actually_open_camera_android()
         else:
             self.show_snackbar("Необходимо разрешение на камеру")
@@ -97,65 +77,23 @@ class MainApp(MDApp):
     def _actually_open_camera_android(self):
         try:
             from jnius import autoclass
-    
+
             PythonActivity = autoclass('org.kivy.android.PythonActivity')
             Intent = autoclass('android.content.Intent')
             MediaStore = autoclass('android.provider.MediaStore')
-    
+
             activity = PythonActivity.mActivity
             intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-    
+
             activity.startActivity(intent)
-    
+
             self.show_snackbar("Сделай фото, затем выбери его из галереи")
-    
+
         except Exception as e:
             self.show_snackbar(f"Ошибка запуска камеры: {e}")
-    
-    def open_camera_ios(self):
-        try:
-            from plyer import camera
-
-            filename = os.path.join(
-                os.path.expanduser('~'),
-                'Documents',
-                f"photo_{int(time.time())}.jpg"
-            )
-
-            camera.take_picture(
-                filename=filename,
-                on_complete=self.img_ready
-            )
-
-        except Exception as e:
-            Logger.error(f"Camera: Ошибка iOS камеры: {e}")
-            self.show_snackbar(f"Ошибка камеры: {e}")
-
-
-    def open_camera_desktop(self):
-        self.show_snackbar("На ПК камера недоступна. Используй галерею.")
-
-
-    def img_ready(self, filename):
-        if not filename or not os.path.exists(filename):
-            self.show_snackbar("Файл не найден")
-            return
-
-        self.captured_image_path = filename
-
-        try:
-            line_screen = self.sm.get_screen("line")
-            if hasattr(line_screen, "set_image"):
-                line_screen.set_image(filename)
-
-        except Exception as e:
-            self.show_snackbar(f"Ошибка обработки: {e}")
-            return
-        
-        self.go_next("line")
-
 
     def pick_from_gallery(self):
+        """Выбор изображения из галереи Android"""
         try:
             from plyer import filechooser
 
@@ -169,6 +107,24 @@ class MainApp(MDApp):
     def _on_gallery_select(self, selection):
         if selection:
             self.img_ready(selection[0])
+
+    def img_ready(self, filename):
+        """Обработка выбранного или снятого изображения"""
+        if not filename or not os.path.exists(filename):
+            self.show_snackbar("Файл не найден")
+            return
+
+        self.captured_image_path = filename
+
+        try:
+            line_screen = self.sm.get_screen("line")
+            if hasattr(line_screen, "set_image"):
+                line_screen.set_image(filename)
+        except Exception as e:
+            self.show_snackbar(f"Ошибка обработки: {e}")
+            return
+        
+        self.go_next("line")
 
 
 if __name__ == "__main__":
