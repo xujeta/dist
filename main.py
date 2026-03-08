@@ -25,12 +25,6 @@ class MainApp(MDApp):
         self.theme_cls.primary_palette = "Gray"
 
         Builder.load_file("app.kv")
-
-        from android.permissions import request_permissions, Permission
-        request_permissions([
-            Permission.CAMERA,
-            Permission.READ_MEDIA_IMAGES
-        ])
         
         self.sm = ScreenManager(transition=SlideTransition(direction="left"))
         self.sm.add_widget(StartScreen(name="start"))
@@ -63,12 +57,12 @@ class MainApp(MDApp):
 
     def show_snackbar(self, text):
         from kivy.clock import Clock
-    
+
         def _show(dt):
             snackbar = Factory.StyledSnackbar()
             snackbar.ids.label.text = text
             snackbar.open()
-    
+
         Clock.schedule_once(_show)
 
     def open_camera(self):
@@ -86,70 +80,72 @@ class MainApp(MDApp):
             self.show_snackbar("Необходимо разрешение на камеру")
     
     def _actually_open_camera_android(self):
-        try:
-            from jnius import autoclass
-            from android import activity
-            import os
-
-            PythonActivity = autoclass('org.kivy.android.PythonActivity')
-            Intent = autoclass('android.content.Intent')
-            MediaStore = autoclass('android.provider.MediaStore')
-            File = autoclass('java.io.File')
-            FileProvider = autoclass('androidx.core.content.FileProvider')
-
-            activity_instance = PythonActivity.mActivity
-
-            # создаём файл
-            app_dir = activity_instance.getExternalFilesDir(None).getAbsolutePath()
-            image_path = os.path.join(app_dir, "camera_photo.jpg")
-            self._camera_image_path = image_path
-
-            image_file = File(image_path)
-
-            # authority = package + ".provider"
-            authority = activity_instance.getPackageName() + ".provider"
-
-            uri = FileProvider.getUriForFile(
-                activity_instance,
-                authority,
-                image_file
-            )
-
-            intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-            intent.putExtra(MediaStore.EXTRA_OUTPUT, uri)
-
-            activity.bind(on_activity_result=self._on_camera_result)
-            activity_instance.startActivityForResult(intent, 2001)
-
-        except Exception as e:
-            self.show_snackbar(f"Ошибка запуска камеры: {e}")
+            print("=== CAMERA FUNCTION CALLED ===")
+            try:
+                from jnius import autoclass, cast
+                from android import activity
+                import os
+        
+                PythonActivity = autoclass('org.kivy.android.PythonActivity')
+                Intent = autoclass('android.content.Intent')
+                MediaStore = autoclass('android.provider.MediaStore')
+                File = autoclass('java.io.File')
+                FileProvider = autoclass('androidx.core.content.FileProvider')
+        
+                activity_instance = PythonActivity.mActivity
+        
+                app_dir = activity_instance.getExternalFilesDir(None).getAbsolutePath()
+                image_path = os.path.join(app_dir, "camera_photo.jpg")
+                self._camera_image_path = image_path
+        
+                if os.path.exists(image_path):
+                    os.remove(image_path)
+        
+                image_file = File(image_path)
+                authority = "com.map2motion.map2motion.provider"
+        
+                uri = FileProvider.getUriForFile(
+                    activity_instance,
+                    authority,
+                    image_file
+                )
+                
+                intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+                
+                # Кастуем URI в Parcelable (передаем имя класса строкой)
+                parcelable_uri = cast('android.os.Parcelable', uri)
+                intent.putExtra(MediaStore.EXTRA_OUTPUT, parcelable_uri)
+        
+                intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        
+                # Биндим коллбэк
+                activity.unbind(on_activity_result=self._on_camera_result)
+                activity.bind(on_activity_result=self._on_camera_result)
+        
+                print("ABOUT TO START CAMERA INTENT DIRECTLY")
+                
+                # ЗАПУСКАЕМ НАПРЯМУЮ (без chooser)
+                activity_instance.startActivityForResult(intent, 2001)
+                print("INTENT SENT SUCCESSFULLY")
+        
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                self.show_snackbar(f"Ошибка: {e}")
 
     def _on_camera_result(self, request_code, result_code, intent):
         from android import activity
         activity.unbind(on_activity_result=self._on_camera_result)
-
+    
         if request_code != 2001:
             return
-
-        print("CAMERA RESULT:", result_code)
-
+    
         if result_code == -1:
             from kivy.clock import Clock
-            Clock.schedule_once(lambda dt: self.img_ready(self._camera_image_path))
-
-            print("CAMERA RESULT CODE:", result_code)
-            print("CAMERA INTENT:", intent)
-
-            if result_code == -1 and intent:
-                uri = intent.getData()
-                print("CAMERA URI:", uri)
-
-                if uri:
-                    real_path = self._copy_uri_to_internal(uri)
-                    print("CAMERA PATH:", real_path)
-
-                    if real_path:
-                        self.img_ready(real_path)
+            Clock.schedule_once(
+                lambda dt: self.img_ready(self._camera_image_path)
+            )
 
     def pick_from_gallery(self):
         try:
