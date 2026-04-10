@@ -21,7 +21,6 @@ int currentLevel = 0;
 void updateLedColor() {
   pixels.clear();
 
-  // Используем currentLevel вместо чтения пинов, так надежнее
   if (currentLevel == 0) {
     pixels.setPixelColor(0, pixels.Color(0, 0, 255));   // Синий
   }
@@ -63,7 +62,7 @@ void setup() {
   digitalWrite(RELAY3_PIN, LOW);
 
   pixels.begin();
-  pixels.setBrightness(50); // 3. Ставим яркость побольше
+  pixels.setBrightness(50); 
   updateLedColor();
 
   WiFi.softAP(ssid, password);
