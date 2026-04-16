@@ -1,0 +1,70 @@
+#:import MDLabel kivymd.uix.label.MDLabel
+#:import MDRaisedButton kivymd.uix.button.MDRaisedButton
+
+<BeautifulButton@MDRaisedButton>:
+    font_name: "Assets/fonts/Jura-Medium.ttf"
+    font_size: "20sp"
+    text_color: 1, 1, 1, 1
+    elevation: 2
+    padding: [dp(20), dp(10)]
+
+MDFloatLayout:
+    MDLabel:
+        text: "Ручное управление реле"
+        halign: "center"
+        font_size: "30sp"
+        bold: True
+        pos_hint: {"center_x": 0.5, "top": 0.95}
+        size_hint_y: None
+        height: dp(50)
+
+    MDLabel:
+        id: status_label
+        text: "Статус: Ожидание"
+        halign: "center"
+        theme_text_color: "Custom"
+        text_color: 1, 1, 0, 1
+        pos_hint: {"center_x": 0.5, "top": 0.85}
+        size_hint_y: None
+        height: dp(30)
+
+    MDBoxLayout:
+        orientation: "vertical"
+        spacing: "20dp"
+        size_hint: 0.8, None
+        height: self.minimum_height
+        pos_hint: {"center_x": 0.5, "center_y": 0.5}
+
+        BeautifulButton:
+            id: btn_relay1
+            text: "РЕЛЕ 1 (База)"
+            size_hint_x: 1
+            size_hint_y: None
+            height: "56dp"
+            md_bg_color: 0.2, 0.2, 0.2, 1
+            on_release: app.toggle_relay1()
+
+        BeautifulButton:
+            id: btn_relay2
+            text: "РЕЛЕ 2 (Средняя)"
+            size_hint_x: 1
+            size_hint_y: None
+            height: "56dp"
+            md_bg_color: 0.2, 0.2, 0.2, 1
+            on_release: app.toggle_relay2()
+
+        BeautifulButton:
+            id: btn_relay3
+            text: "РЕЛЕ 3 (Максимум)"
+            size_hint_x: 1
+            size_hint_y: None
+            height: "56dp"
+            md_bg_color: 0.2, 0.2, 0.2, 1
+            on_release: app.toggle_relay3()
+
+    BeautifulButton:
+        text: "ВЫКЛЮЧИТЬ ВСЁ"
+        pos_hint: {"center_x": 0.5, "y": 0.1}
+        size_hint_x: 0.6
+        md_bg_color: 0.8, 0, 0, 0.8
+        on_release: app.off_all()
