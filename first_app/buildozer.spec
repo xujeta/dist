@@ -2,6 +2,7 @@
 title = Map2motion
 package.name = map2motion
 package.domain = com.map2motion
+icon.filename = icon.png
 
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,ttf,json,xml
