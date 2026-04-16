@@ -68,6 +68,18 @@ void handlePing() {
   server.send(200, "text/plain", "alive");
 }
 
+void applyRelays(int r1, int r2, int r3) {
+
+  digitalWrite(RELAY1_PIN, r1 ? RELAY_ON : RELAY_OFF);
+  digitalWrite(RELAY2_PIN, r2 ? RELAY_ON : RELAY_OFF);
+  digitalWrite(RELAY3_PIN, r3 ? RELAY_ON : RELAY_OFF);
+
+  level = r1 + r2 + r3;
+
+  updateLedColor();
+  updateLCD();
+}
+
 void handleStatus() {
   // Читаем текущее состояние пинов
   int r1 = digitalRead(RELAY1_PIN);
@@ -93,10 +105,17 @@ void handleSetLevel() {
 }
 
 void handleSetRelays() {
-  // Если передаем 1 — включит (HIGH), если 0 — выключит (LOW)
-  if(server.hasArg("r1")) digitalWrite(RELAY1_PIN, server.arg("r1").toInt() == 1 ? RELAY_ON : RELAY_OFF);
-  if(server.hasArg("r2")) digitalWrite(RELAY2_PIN, server.arg("r2").toInt() == 1 ? RELAY_ON : RELAY_OFF);
-  if(server.hasArg("r3")) digitalWrite(RELAY3_PIN, server.arg("r3").toInt() == 1 ? RELAY_ON : RELAY_OFF);
+
+  int r1 = (digitalRead(RELAY1_PIN) == RELAY_ON);
+  int r2 = (digitalRead(RELAY2_PIN) == RELAY_ON);
+  int r3 = (digitalRead(RELAY3_PIN) == RELAY_ON);
+
+  if(server.hasArg("r1")) r1 = server.arg("r1").toInt();
+  if(server.hasArg("r2")) r2 = server.arg("r2").toInt();
+  if(server.hasArg("r3")) r3 = server.arg("r3").toInt();
+
+  applyRelays(r1, r2, r3);
+
   handleStatus();
 }
 
