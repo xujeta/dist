@@ -4,126 +4,129 @@
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 
+// Константы для логики реле
+#define RELAY_ON  LOW
+#define RELAY_OFF HIGH
+
 const char* ssid = "Lobanov";
 const char* password = "12345678";
 
 WebServer server(80);
 
-// --- ПИНЫ РЕЛЕ (как у напарника) ---
-const int RELAY1_PIN = 13;
-const int RELAY2_PIN = 12;
+// -------- РЕЛЕ --------
+const int RELAY1_PIN = 12;
+const int RELAY2_PIN = 13;
 const int RELAY3_PIN = 14;
-
-// --- НАСТРОЙКИ RGB (проверенные тобой) ---
-const int RGB_PIN = 48; 
+// -------- RGB --------
+const int RGB_PIN = 48;
 const int NUMPIXELS = 1;
 Adafruit_NeoPixel pixels(NUMPIXELS, RGB_PIN, NEO_GRB + NEO_KHZ800);
 
-// --- НАСТРОЙКИ LCD (как у напарника) ---
+int level = 0;
+
 #define I2C_SDA 21
 #define I2C_SCL 20
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
-int currentLevel = 0;
-
-// Функция обновления экрана
-void updateLCD() {
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("Level: ");
-  lcd.print(currentLevel);
-  
-  lcd.setCursor(0, 1);
-  lcd.print("R1:");
-  lcd.print(currentLevel >= 1 ? "ON " : "OFF");
-  lcd.print(" R2:");
-  lcd.print(currentLevel >= 2 ? "ON " : "OFF");
-  // Если нужно вывести третье - можно сократить текст или добавить логику
-}
-
-// Функция обновления светодиода
 void updateLedColor() {
-  pixels.clear();
-  if (currentLevel == 0) {
-    pixels.setPixelColor(0, pixels.Color(0, 0, 255));   // Синий
-  }
-  else if (currentLevel == 1) {
-    pixels.setPixelColor(0, pixels.Color(0, 255, 0));   // Зелёный
-  }
-  else if (currentLevel == 2) {
-    pixels.setPixelColor(0, pixels.Color(255, 100, 0)); // Оранжевый
-  }
-  else {
-    pixels.setPixelColor(0, pixels.Color(255, 0, 0));   // Красный
-  }
+  uint32_t color;
+  if(level == 0)      color = pixels.Color(0,0,255);     // синий
+  else if(level == 1) color = pixels.Color(0,255,0);     // зелёный
+  else if(level == 2) color = pixels.Color(255,120,0);   // оранжевый
+  else                color = pixels.Color(255,0,0);     // красный
+
+  pixels.setPixelColor(0, color);
   pixels.show();
 }
 
-// Главная функция применения состояния
-void applyLevel(int level) {
-  currentLevel = level;
+void updateLCD() {
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("R1:");
+  lcd.print(level >= 1 ? "ON " : "OFF");
+  lcd.print(" R2:");
+  lcd.print(level >= 2 ? "ON" : "OFF");
 
-  // У напарника реле включаются через LOW, выключаются через HIGH
-  digitalWrite(RELAY1_PIN, currentLevel >= 1 ? LOW : HIGH);
-  digitalWrite(RELAY2_PIN, currentLevel >= 2 ? LOW : HIGH);
-  digitalWrite(RELAY3_PIN, currentLevel >= 3 ? LOW : HIGH);
+  lcd.setCursor(0,1);
+  lcd.print("R3:");
+  lcd.print(level >= 3 ? "ON " : "OFF");
+}
+
+void applyLevel(int lvl) {
+  level = constrain(lvl, 0, 3);
+
+  // Прямое управление пинами
+  digitalWrite(RELAY1_PIN, (level >= 1) ? RELAY_ON : RELAY_OFF);
+  digitalWrite(RELAY2_PIN, (level >= 2) ? RELAY_ON : RELAY_OFF);
+  digitalWrite(RELAY3_PIN, (level >= 3) ? RELAY_ON : RELAY_OFF);
 
   updateLedColor();
   updateLCD();
 }
 
+void handlePing() {
+  server.send(200, "text/plain", "alive");
+}
+
+void handleStatus() {
+  // Читаем текущее состояние пинов
+  int r1 = digitalRead(RELAY1_PIN);
+  int r2 = digitalRead(RELAY2_PIN);
+  int r3 = digitalRead(RELAY3_PIN);
+
+  String json = "{";
+  json += "\"level\":" + String(level) + ",";
+  json += "\"r1\":" + String(r1) + ",";
+  json += "\"r2\":" + String(r2) + ",";
+  json += "\"r3\":" + String(r3);
+  json += "}";
+  server.send(200, "application/json", json);
+}
+
+void handleSetLevel() {
+  if(!server.hasArg("level")) {
+    server.send(400, "text/plain", "missing level");
+    return;
+  }
+  applyLevel(server.arg("level").toInt());
+  handleStatus();
+}
+
+void handleSetRelays() {
+  // Если передаем 1 — включит (HIGH), если 0 — выключит (LOW)
+  if(server.hasArg("r1")) digitalWrite(RELAY1_PIN, server.arg("r1").toInt() == 1 ? RELAY_ON : RELAY_OFF);
+  if(server.hasArg("r2")) digitalWrite(RELAY2_PIN, server.arg("r2").toInt() == 1 ? RELAY_ON : RELAY_OFF);
+  if(server.hasArg("r3")) digitalWrite(RELAY3_PIN, server.arg("r3").toInt() == 1 ? RELAY_ON : RELAY_OFF);
+  handleStatus();
+}
+
 void setup() {
   Serial.begin(115200);
 
-  // Инициализация LCD
-  Wire.begin(I2C_SDA, I2C_SCL);
-  lcd.init();
-  lcd.backlight();
-
-  // Инициализация Реле
+  // Важно: сначала ставим HIGH (выключено), потом включаем как OUTPUT
+  // Это предотвратит щелчок реле при каждой перезагрузке
+  digitalWrite(RELAY1_PIN, RELAY_OFF);
+  digitalWrite(RELAY2_PIN, RELAY_OFF);
+  digitalWrite(RELAY3_PIN, RELAY_OFF);
+  
   pinMode(RELAY1_PIN, OUTPUT);
   pinMode(RELAY2_PIN, OUTPUT);
   pinMode(RELAY3_PIN, OUTPUT);
 
-  // Инициализация RGB
   pixels.begin();
   pixels.setBrightness(50);
-
-  // Установка начального состояния (все выключено)
+  Wire.begin(I2C_SDA, I2C_SCL);
+  lcd.init();
+  lcd.backlight();
+  
+  delay(500); // Даем время железу "проснуться"
   applyLevel(0);
 
   WiFi.softAP(ssid, password);
-  Serial.println("AP IP: " + WiFi.softAPIP().toString());
-
-  // --- API ---
-
-  server.on("/status", []() {
-    String json = "{";
-    json += "\"level\":" + String(currentLevel) + ",";
-    json += "\"r1\":" + String(!digitalRead(RELAY1_PIN)) + ","; // Инвертируем, т.к. LOW это ON
-    json += "\"r2\":" + String(!digitalRead(RELAY2_PIN)) + ",";
-    json += "\"r3\":" + String(!digitalRead(RELAY3_PIN));
-    json += "}";
-    server.send(200, "application/json", json);
-  });
-
-  server.on("/set", []() {
-    if (server.hasArg("level")) {
-      int level = server.arg("level").toInt();
-      if (level < 0) level = 0;
-      if (level > 3) level = 3;
-      applyLevel(level);
-      server.send(200, "text/plain", "OK. Level set to " + String(level));
-    } else {
-      server.send(400, "text/plain", "Missing level");
-    }
-  });
-
-  server.on("/off", []() {
-    applyLevel(0);
-    server.send(200, "text/plain", "OFF");
-  });
-
+  server.on("/ping", handlePing);
+  server.on("/status", handleStatus);
+  server.on("/set", handleSetLevel);
+  server.on("/setRelays", handleSetRelays);
   server.begin();
 }
 
