@@ -4,43 +4,39 @@
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 
-const char* ssid = "Lobanov";
-const char* password = "12345678";
+#define RELAY_ON  LOW
+#define RELAY_OFF HIGH
 
-WebServer server(80);
+const int RELAY1_PIN = 12;
+const int RELAY2_PIN = 13;
+const int RELAY3_PIN = 14;
 
-// -------- РЕЛЕ --------
-const int RELAY1_PIN = 2;
-const int RELAY2_PIN = 4;
-const int RELAY3_PIN = 5;
-
-// -------- RGB --------
 const int RGB_PIN = 48;
 const int NUMPIXELS = 1;
 
 Adafruit_NeoPixel pixels(NUMPIXELS, RGB_PIN, NEO_GRB + NEO_KHZ800);
 
-int level = 0;
+const char* ssid = "Lobanov";
+const char* password = "12345678";
+
+WebServer server(80);
 
 #define I2C_SDA 21
 #define I2C_SCL 20
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
-// ОБНОВЛЕНИЕ ЦВЕТА LED
+int level = 0;
+
 
 void updateLedColor() {
 
   uint32_t color;
 
-  if(level == 0)
-    color = pixels.Color(0,0,255);     // синий
-  else if(level == 1)
-    color = pixels.Color(0,255,0);     // зелёный
-  else if(level == 2)
-    color = pixels.Color(255,120,0);   // оранжевый
-  else
-    color = pixels.Color(255,0,0);     // красный
+  if(level == 0)      color = pixels.Color(0,0,255);
+  else if(level == 1) color = pixels.Color(0,255,0);
+  else if(level == 2) color = pixels.Color(255,120,0);
+  else                color = pixels.Color(255,0,0);
 
   pixels.setPixelColor(0, color);
   pixels.show();
@@ -62,39 +58,39 @@ void updateLCD() {
   lcd.print(level >= 3 ? "ON " : "OFF");
 }
 
-// ПРИМЕНЕНИЕ УРОВНЯ
-
 void applyLevel(int lvl) {
 
   level = constrain(lvl, 0, 3);
 
-  bool r1 = false;
-  bool r2 = false;
-  bool r3 = false;
-
-  if(level >= 1) r1 = true;
-  if(level >= 2) r2 = true;
-  if(level >= 3) r3 = true;
-
-  digitalWrite(RELAY1_PIN, r1);
-  digitalWrite(RELAY2_PIN, r2);
-  digitalWrite(RELAY3_PIN, r3);
+  digitalWrite(RELAY1_PIN, (level >= 1) ? RELAY_ON : RELAY_OFF);
+  digitalWrite(RELAY2_PIN, (level >= 2) ? RELAY_ON : RELAY_OFF);
+  digitalWrite(RELAY3_PIN, (level >= 3) ? RELAY_ON : RELAY_OFF);
 
   updateLedColor();
   updateLCD();
 }
 
+void applyRelays(int r1, int r2, int r3) {
+
+  digitalWrite(RELAY1_PIN, r1 ? RELAY_ON : RELAY_OFF);
+  digitalWrite(RELAY2_PIN, r2 ? RELAY_ON : RELAY_OFF);
+  digitalWrite(RELAY3_PIN, r3 ? RELAY_ON : RELAY_OFF);
+
+  level = r1 + r2 + r3;
+
+  updateLedColor();
+  updateLCD();
+}
 
 void handlePing() {
   server.send(200, "text/plain", "alive");
 }
 
-
 void handleStatus() {
 
-  bool r1 = digitalRead(RELAY1_PIN);
-  bool r2 = digitalRead(RELAY2_PIN);
-  bool r3 = digitalRead(RELAY3_PIN);
+  int r1 = digitalRead(RELAY1_PIN);
+  int r2 = digitalRead(RELAY2_PIN);
+  int r3 = digitalRead(RELAY3_PIN);
 
   String json = "{";
   json += "\"level\":" + String(level) + ",";
@@ -106,7 +102,7 @@ void handleStatus() {
   server.send(200, "application/json", json);
 }
 
-// ------------------------------------------------
+/* используется сервером */
 
 void handleSetLevel() {
 
@@ -115,40 +111,41 @@ void handleSetLevel() {
     return;
   }
 
-  int newLevel = server.arg("level").toInt();
+  int lvl = server.arg("level").toInt();
 
-  applyLevel(newLevel);
+  applyLevel(lvl);
 
   handleStatus();
 }
 
-// ------------------------------------------------
+/* используется ручным приложением */
 
 void handleSetRelays() {
 
-  if(server.hasArg("r1"))
-    digitalWrite(RELAY1_PIN, server.arg("r1").toInt());
+  int r1 = digitalRead(RELAY1_PIN) == RELAY_ON;
+  int r2 = digitalRead(RELAY2_PIN) == RELAY_ON;
+  int r3 = digitalRead(RELAY3_PIN) == RELAY_ON;
 
-  if(server.hasArg("r2"))
-    digitalWrite(RELAY2_PIN, server.arg("r2").toInt());
+  if(server.hasArg("r1")) r1 = server.arg("r1").toInt();
+  if(server.hasArg("r2")) r2 = server.arg("r2").toInt();
+  if(server.hasArg("r3")) r3 = server.arg("r3").toInt();
 
-  if(server.hasArg("r3"))
-    digitalWrite(RELAY3_PIN, server.arg("r3").toInt());
+  applyRelays(r1, r2, r3);
 
   handleStatus();
 }
-
-// ------------------------------------------------
 
 void setup() {
 
   Serial.begin(115200);
 
+  digitalWrite(RELAY1_PIN, RELAY_OFF);
+  digitalWrite(RELAY2_PIN, RELAY_OFF);
+  digitalWrite(RELAY3_PIN, RELAY_OFF);
+
   pinMode(RELAY1_PIN, OUTPUT);
   pinMode(RELAY2_PIN, OUTPUT);
   pinMode(RELAY3_PIN, OUTPUT);
-
-  // RGB init
   pixels.begin();
   pixels.setBrightness(50);
 
@@ -156,23 +153,27 @@ void setup() {
 
   lcd.init();
   lcd.backlight();
+
   applyLevel(0);
 
   WiFi.softAP(ssid, password);
 
-  Serial.println("AP started");
+  Serial.println("ESP started");
   Serial.println(WiFi.softAPIP());
 
   server.on("/ping", handlePing);
+
   server.on("/status", handleStatus);
+
   server.on("/set", handleSetLevel);
+
   server.on("/setRelays", handleSetRelays);
 
   server.begin();
 }
 
-// ------------------------------------------------
-
 void loop() {
+
   server.handleClient();
+
 }
