@@ -4,7 +4,7 @@
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 
-// Константы для логики реле
+// константы для логики реле
 #define RELAY_ON  LOW
 #define RELAY_OFF HIGH
 
@@ -13,11 +13,9 @@ const char* password = "12345678";
 
 WebServer server(80);
 
-// -------- РЕЛЕ --------
 const int RELAY1_PIN = 12;
 const int RELAY2_PIN = 13;
 const int RELAY3_PIN = 14;
-// -------- RGB --------
 const int RGB_PIN = 48;
 const int NUMPIXELS = 1;
 Adafruit_NeoPixel pixels(NUMPIXELS, RGB_PIN, NEO_GRB + NEO_KHZ800);
@@ -55,7 +53,7 @@ void updateLCD() {
 void applyLevel(int lvl) {
   level = constrain(lvl, 0, 3);
 
-  // Прямое управление пинами
+  // прямое управление пинами
   digitalWrite(RELAY1_PIN, (level >= 1) ? RELAY_ON : RELAY_OFF);
   digitalWrite(RELAY2_PIN, (level >= 2) ? RELAY_ON : RELAY_OFF);
   digitalWrite(RELAY3_PIN, (level >= 3) ? RELAY_ON : RELAY_OFF);
@@ -81,7 +79,7 @@ void applyRelays(int r1, int r2, int r3) {
 }
 
 void handleStatus() {
-  // Читаем текущее состояние пинов
+  // читаем текущее состояние пинов
   int r1 = digitalRead(RELAY1_PIN);
   int r2 = digitalRead(RELAY2_PIN);
   int r3 = digitalRead(RELAY3_PIN);
@@ -121,9 +119,7 @@ void handleSetRelays() {
 
 void setup() {
   Serial.begin(115200);
-
-  // Важно: сначала ставим HIGH (выключено), потом включаем как OUTPUT
-  // Это предотвратит щелчок реле при каждой перезагрузке
+  
   digitalWrite(RELAY1_PIN, RELAY_OFF);
   digitalWrite(RELAY2_PIN, RELAY_OFF);
   digitalWrite(RELAY3_PIN, RELAY_OFF);
@@ -138,7 +134,7 @@ void setup() {
   lcd.init();
   lcd.backlight();
   
-  delay(500); // Даем время железу "проснуться"
+  delay(500); // даем время железу "проснуться"
   applyLevel(0);
 
   WiFi.softAP(ssid, password);
