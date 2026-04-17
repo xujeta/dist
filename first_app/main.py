@@ -25,9 +25,9 @@ from screens.result_screen import ResultScreen
 class MainApp(MDApp):
     title_text = StringProperty("Камера")
     captured_image_path = StringProperty("")
-    min_robot_speed = NumericProperty(1.0) # Скорость
-    angle_t1 = NumericProperty(30.0)       # Угол для Реле 2
-    angle_t2 = NumericProperty(60.0)       # Угол для Реле 3
+    min_robot_speed = NumericProperty(1.0) # cкорость
+    angle_t1 = NumericProperty(30.0)       # угол для реле 2
+    angle_t2 = NumericProperty(60.0)       # угол для реле 3
     pixel_to_meter_ratio = NumericProperty(1.0)
     
     robot = None
@@ -49,7 +49,6 @@ class MainApp(MDApp):
         return self.sm
 
     def go_next(self, screen_name):
-        # Если мы на экране выбора линии и нажимаем "Вперед" (в profile)
         if self.sm.current == "line" and screen_name == "profile":
             line_screen = self.sm.get_screen("line")
             widget = line_screen.ids.line_widget
@@ -58,7 +57,6 @@ class MainApp(MDApp):
             img_pt_b = widget.get_image_coordinates(widget.point_b)
             
             if img_pt_a and img_pt_b:
-                # ИСПРАВЛЕНИЕ: Берем шаг прямо из экрана выбора линии
                 step_val = line_screen.step 
                 
                 self.sm.transition.direction = "left"
@@ -69,7 +67,6 @@ class MainApp(MDApp):
                 if hasattr(profile_screen, 'show_loading'):
                     profile_screen.show_loading(True)
 
-                # Теперь step_val будет именно тем числом, которое ты ввела в диалоге
                 threading.Thread(
                     target=self._send_to_server, 
                     args=(line_screen.image_path, img_pt_a, img_pt_b, 
@@ -80,7 +77,6 @@ class MainApp(MDApp):
                 self.show_snackbar("Сначала поставьте две точки на карте!")
             return
 
-        # Обычный переход для остальных экранов
         self.sm.transition.direction = "left"
         self.sm.current = screen_name
         self.update_title(screen_name)
@@ -90,15 +86,11 @@ class MainApp(MDApp):
 
     
         try:
-
-            # СЖАТИЕ ИЗОБРАЖЕНИЯ
             compressed_path, scale = self._compress_image(image_path)
 
-            # Масштабируем координаты
             ax_s, ay_s = pt_a[0] * scale, pt_a[1] * scale
             bx_s, by_s = pt_b[0] * scale, pt_b[1] * scale
 
-            # Масштабируем экстремумы
             extrema_scaled = []
             for e in extrema:
                 extrema_scaled.append([
@@ -150,34 +142,26 @@ class MainApp(MDApp):
         self.show_snackbar(error_msg)
 
     def _on_server_response(self, result):
-        # 1. Скрываем индикатор загрузки
         profile_screen = self.sm.get_screen("profile")
         if hasattr(profile_screen, 'show_loading'):
             profile_screen.show_loading(False)
 
-        # 2. Проверяем, нет ли ошибки в ответе сервера
         if "error" in result:
             self.show_snackbar(f"Ошибка сервера: {result['error']}")
             self.go_back("line")
             return
 
-        # 3. Получаем данные профиля (это список словарей [{'dist': ..., 'h': ...}])
         profile_data = result["profile_data"]
 
-        # 4. Находим экран результатов и отдаем ему СЫРЫЕ данные
         res_screen = self.sm.get_screen("result")
-        
-        # Мы убрали создание переменной 'points'. 
-        # Теперь передаем список словарей напрямую.
+    
         res_screen.display_result(profile_data)
 
-        # 5. Переключаем экран
         self.sm.transition.direction = "left"
         self.sm.current = "result"
         self.update_title("result")
         
     def go_back(self, screen_name):
-        # Защита от вылета: проверяем, существует ли экран
         if self.sm.has_screen(screen_name):
             self.sm.transition.direction = "right"
             self.sm.current = screen_name
@@ -223,7 +207,6 @@ class MainApp(MDApp):
             PythonActivity = autoclass('org.kivy.android.PythonActivity')
             activity_instance = PythonActivity.mActivity
 
-            # 1. Формируем путь для сохранения файла
             app_dir = activity_instance.getExternalFilesDir(None).getAbsolutePath()
             image_path = os.path.join(app_dir, "camera_photo.jpg")
             self._camera_image_path = image_path
@@ -231,14 +214,12 @@ class MainApp(MDApp):
             if os.path.exists(image_path):
                 os.remove(image_path)
 
-            # 2. Привязываем обработчик возврата из камеры
             try:
                 activity.unbind(on_activity_result=self._on_camera_result)
             except ValueError:
                 pass
             activity.bind(on_activity_result=self._on_camera_result)
 
-            # 3. ВЫЗЫВАЕМ ФУНКЦИЮ В ГЛАВНОМ ПОТОКЕ ANDROID
             self._dispatch_camera_intent(image_path)
 
         except Exception as e:
@@ -248,13 +229,13 @@ class MainApp(MDApp):
         try:
             img = Image.open(input_path)
             orig_w, orig_h = img.size
-            max_size = 1600 # 1600px хватит для точности и это ускорит сервер в 5 раз
+            max_size = 1600
 
             if max(orig_w, orig_h) > max_size:
                 img.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
 
             new_w, new_h = img.size
-            scale = new_w / orig_w # Коэффициент масштабирования
+            scale = new_w / orig_w
 
             temp_path = input_path.replace(".jpg", "_compressed.jpg")
             img.save(temp_path, "JPEG", quality=80, optimize=True)
@@ -264,7 +245,6 @@ class MainApp(MDApp):
 
     @run_on_ui_thread
     def _dispatch_camera_intent(self, image_path):
-        # Эта функция теперь гарантированно выполняется в UI-потоке Android!
         try:
             from jnius import autoclass, cast
             PythonActivity = autoclass('org.kivy.android.PythonActivity')
