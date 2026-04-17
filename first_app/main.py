@@ -86,31 +86,46 @@ class MainApp(MDApp):
         self.update_title(screen_name)
 
     def _send_to_server(self, image_path, pt_a, pt_b, h_a, h_b, step, extrema):
-        SERVER_URL = "http://192.168.4.2:5000/process_profile" 
+        SERVER_URL = "http://192.168.4.2:5000/process_profile"
+
+    
         try:
-            # ПЕРЕСЧИТЫВАЕМ КООРДИНАТЫ ПОД НОВЫЙ РАЗМЕР
+
+            # СЖАТИЕ ИЗОБРАЖЕНИЯ
+            compressed_path, scale = self._compress_image(image_path)
+
+            # Масштабируем координаты
             ax_s, ay_s = pt_a[0] * scale, pt_a[1] * scale
             bx_s, by_s = pt_b[0] * scale, pt_b[1] * scale
 
-            # Пересчитываем экстремумы (x, y, h, type)
+            # Масштабируем экстремумы
             extrema_scaled = []
             for e in extrema:
-                extrema_scaled.append([e['x'] * scale, e['y'] * scale, e['h'], e['type']])
+                extrema_scaled.append([
+                    e['x'] * scale,
+                    e['y'] * scale,
+                    e['h'],
+                    e['type']
+                ])
 
             with open(compressed_path, 'rb') as f:
+
                 response = requests.post(
-                    SERVER_URL, 
-                    files={'image': f}, 
+                    SERVER_URL,
+                    files={'image': f},
                     data={
-                        'a_x': ax_s, 'a_y': ay_s, 'h_a': h_a,
-                        'b_x': bx_s, 'b_y': by_s, 'h_b': h_b,
+                        'a_x': ax_s,
+                        'a_y': ay_s,
+                        'h_a': h_a,
+                        'b_x': bx_s,
+                        'b_y': by_s,
+                        'h_b': h_b,
                         'step': step,
-                        'extrema': json.dumps(extrema_scaled) 
-                    }, 
+                        'extrema': json.dumps(extrema_scaled)
+                    },
                     timeout=60
                 )
-            
-            # Удаляем временный сжатый файл после отправки
+
             if compressed_path != image_path and os.path.exists(compressed_path):
                 os.remove(compressed_path)
 
@@ -118,13 +133,15 @@ class MainApp(MDApp):
                 result = response.json()
                 Clock.schedule_once(lambda dt: self._on_server_response(result))
             else:
-                Clock.schedule_once(lambda dt: self._on_server_error(f"Ошибка: {response.status_code}"))
+                Clock.schedule_once(lambda dt: self._on_server_error(f"HTTP {response.status_code}"))
+
         except Exception as e:
-            # Не забываем почистить файл и тут, если была ошибка
-            if compressed_path != image_path and os.path.exists(compressed_path):
-                os.remove(compressed_path)
+            import traceback
+            traceback.print_exc()
+        
             error_msg = str(e)
-            Clock.schedule_once(lambda dt, msg=error_msg: self._on_server_error(msg))
+        
+            Clock.schedule_once(lambda dt: self._on_server_error(error_msg))
 
     def _on_server_error(self, error_msg):
         profile_screen = self.sm.get_screen("profile")
