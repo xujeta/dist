@@ -134,7 +134,7 @@ class LineImageWidget(Image):
             self.current_state = "WAIT_DISTANCE" # ПЕРЕХОДИМ К МАСШТАБУ
             self.dialog.dismiss()
             # Сразу запрашиваем реальное расстояние между ними
-            self.show_input_dialog("Масштаб", "Реальное расстояние между А и В (в метрах):")
+            self.show_input_dialog("Масштаб", "Расстояние между А и В (в м.):")
 
         elif self.current_state == "WAIT_DISTANCE":
             # Вычисляем коэффициент пиксель/метр
@@ -189,10 +189,10 @@ class LineImageWidget(Image):
         user_input = self.extrema_type_field.text.strip().lower()
         if user_input in ['х', 'h', 'холм']:
             internal_type = 'hill'
-            display_type = 'Холм'
+            display_type = 'холм'
         else:
             internal_type = 'depression'
-            display_type = 'Овраг'
+            display_type = 'овраг'
         
         screen = self.parent_screen
         
