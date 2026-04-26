@@ -29,11 +29,5 @@ android.archs = arm64-v8a
 android.gradle_dependencies = androidx.core:core:1.7.0
 android.enable_androidx = True
 
-# android.add_resources = res/xml/file_paths.xml:xml/file_paths.xml
-
-# android.manifest.addition = <provider android:name="androidx.core.content.FileProvider" android:authorities="com.map2motion.map2motion.provider" android:exported="false" android:grantUriPermissions="true"><meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" /></provider>
-
-# android.manifest.queries = <intent><action android:name="android.media.action.IMAGE_CAPTURE" /></intent>
-
 android.exported_activities = org.kivy.android.PythonActivity
 p4a.branch = master
