@@ -14,5 +14,6 @@ class StartScreen(MDScreen):
             app.angle_t1 = 30.0
             app.angle_t2 = 60.0
 
+        app.root.transition.direction = "left"
         app.root.current = "camera"
         app.update_title("camera")
